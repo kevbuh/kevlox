@@ -1,8 +1,15 @@
 # clox
 
 <div align="center" >
-  <img src="https://craftinginterpreters.com/image/a-map-of-the-territory/mountain.png" alt="froog the frog" height="400">
+  <img src="https://craftinginterpreters.com/image/a-map-of-the-territory/mountain.png" alt="ci mountain" height="400">
   <br/>
-  clox: c compiler from crafting interpreters
+  clox: c-based compiler from crafting interpreters
   <br/>
 </div>
+
+-------
+
+NOTES:
+- working on the vm rn
+- bytecode > syntax trees
+- only supports double-precision floating point numbers
