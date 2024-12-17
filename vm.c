@@ -70,13 +70,9 @@ static InterpretResult run() {
     #undef BINARY_OP
 }
 
-InterpretResult interpret(Chunk* chunk) {
-    vm.chunk = chunk;
-
-    // TODO: store as local variable so its in a register
-    // first byte of code in the chunk
-    vm.ip = vm.chunk->code;
-    return run();
+InterpretResult interpret(const char* source) {
+    compile(source);
+    return INTERPRET_OK;
 }
 
 void freeVM() {
