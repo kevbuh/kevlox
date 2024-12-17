@@ -9,6 +9,15 @@
 
 -------
 
+### How to run: 
+
+```bash
+make all
+```
+
+### Features
+- disassembler
+
 NOTES:
 - working on the vm rn
 - bytecode > syntax trees
