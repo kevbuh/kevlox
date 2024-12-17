@@ -1,11 +1,16 @@
 #include <stdio.h>
 #include "common.h"
+#include "debug.h"
 #include "vm.h"
 
 VM vm; // TODO: don't make this global
 
-void initVM() {
+static void resetStack() {
+    vm.stackTop = vm.stack; //  point to the beginning of the array
+}
 
+void initVM() {
+    resetStack();
 }
 
 static InterpretResult run() {
@@ -13,15 +18,33 @@ static InterpretResult run() {
     #define READ_CONSTANT() (vm.chunk->constants.values[READ_BYTE()])
 
     for (;;) {
+        #ifdef DEBUG_TRACE_EXECUTION
+        printf("          ");
+        for (Value* slot = vm.stack; slot < vm.stackTop; slot++) {
+            printf("[ ");
+            printValue(*slot);
+            printf(" ]");
+        }
+        printf("\n");
+        disassembleInstruction(vm.chunk, (int)(vm.ip - vm.chunk->code));
+        #endif
+
         uint8_t instruction;
         switch (instruction = READ_BYTE()) {
             case OP_CONSTANT: {
                 Value constant = READ_CONSTANT();
-                printValue(constant);
-                printf("\n");
+                push(constant);
+                // printf("RUN: ");
+                // printValue(constant);
+                // printf("\n");
                 break;
             }
+            case OP_NEGATE: 
+                push(-pop());
+                break;
             case OP_RETURN: {
+                printValue(pop());
+                printf("\n");
                 return INTERPRET_OK;
             }
         }
@@ -42,4 +65,14 @@ InterpretResult interpret(Chunk* chunk) {
 
 void freeVM() {
 
+}
+
+void push(Value value) {
+    *vm.stackTop = value; // store value at top of the stack (currently empty)
+    vm.stackTop++;
+}
+
+Value pop() {
+    vm.stackTop--;
+    return *vm.stackTop;
 }

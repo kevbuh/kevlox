@@ -6,6 +6,7 @@
  
 typedef enum {
     OP_CONSTANT, // 00: 2 bytes, [opcode, constant index]
+    OP_NEGATE,   // 00: 2 bytes, [opcode, val to negate]
     OP_RETURN,   // 01: 1 byte opcode
 } OpCode;
 
