@@ -17,8 +17,8 @@ make all
 
 ### Features
 - disassembler
+- stack-based bytecode instruction set
 
 NOTES:
-- working on the vm rn
 - bytecode > syntax trees
 - only supports double-precision floating point numbers
