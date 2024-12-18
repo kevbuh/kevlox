@@ -124,6 +124,11 @@ static void endCompiler() {
     emitReturn();
 }
 
+// forward declare
+static void expression();
+static ParseRule* getRule(TokenType type);
+static void parsePrecedence(Precedence precedence);
+
 static void binary () {
     // remember the operator
     TokenType operatorType = parser.previous.type;
@@ -216,7 +221,25 @@ ParseRule rules[] = {
 // parse given precedence
 // starts at the current token and parses any expression at the given precedence level or higher
 static void parsePrecedence(Precedence precedence) {
+    advance();
+    ParseFn prefixRule = getRule(parser.previous.type)->prefix;
+    if (prefixRule == NULL) {
+        error("Expected expression");
+        return;
+    }
 
+    prefixRule();
+
+    while (precedence <= getRule(parser.current.type)->precedence) {
+        advance();
+        ParseFn infixRule = getRule(parser.previous.type)->infix;
+        infixRule();
+    }
+}
+
+// returs rule from parse fn table
+static ParseRule* getRule(TokenType type) {
+    return &rules[type];
 }
 
 static void expression() {
