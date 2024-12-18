@@ -16,8 +16,10 @@ make all
 ```
 
 ### Features
-- disassembler
-- stack-based bytecode instruction set
+- source code scanner/lexer
+- c-compiler
+- stack-based bytecode VM
+- debugging disassembler
 
 NOTES:
 - bytecode > syntax trees

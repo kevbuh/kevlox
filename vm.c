@@ -71,8 +71,21 @@ static InterpretResult run() {
 }
 
 InterpretResult interpret(const char* source) {
-    compile(source);
-    return INTERPRET_OK;
+    Chunk chunk;
+    initChunk(&chunk);
+
+    if (!compile(source, &chunk)) { // compiler take the user’s program and fill up the chunk with bytecode
+      freeChunk(&chunk);
+      return INTERPRET_COMPILE_ERROR;
+    }
+
+    vm.chunk = &chunk; // send chunk to VM to be executed
+    vm.ip = vm.chunk->code;
+
+    InterpretResult result = run();
+
+    freeChunk(&chunk);
+    return result;
 }
 
 void freeVM() {
