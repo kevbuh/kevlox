@@ -12,7 +12,28 @@ typedef struct {
     bool panicMode; // to stop cascading error messages
 } Parser;
 
+// Lox's precedence levels from lowest to highest
+typedef enum {
+    PREC_NONE,
+    PREC_ASSIGNMENT, // =
+    PREC_OR,
+    PREC_AND,
+    PREC_EQUALITY,
+    PREC_COMPARISON,
+    PREC_TERM,       // + -
+    PREC_FACTOR,     // * /
+    PREC_UNARY,      // ! -
+    PREC_CALL,       // . ()
+    PREC_PRIMARY
+} Precedence;
+
 Parser parser;
+
+Chunk* compilingChunk;
+
+static Chunk* currentChunk() {
+    return compilingChunk;
+}
 
 // print where the error occured
 static void errorAt(Token* token, const char* message) {
@@ -61,8 +82,80 @@ static void consume(TokenType type, const char* message) {
     errorAtCurrent(message);
 }
 
+// writes the given byte, which may be an opcode or an operand to an instruction
+// sends in the previous token’s line information so that runtime errors are associated with that line
+static void emitByte(uint8_t byte) {
+    writeChunk(currentChunk(), byte, parser.previous.line);
+}
+
+static void emitBytes(uint8_t byte1, uint8_t byte2) {
+    emitByte(byte1);
+    emitByte(byte2);
+}
+
+static void emitReturn() {
+    emitByte(OP_RETURN);
+}
+
+static uint8_t makeConstant(Value value) {
+    int constant = addConstant(currentChunk(), value);
+    if (constant > UINT8_MAX) {
+        error("Too many constants in one chunk");
+        return 0;
+    }
+
+    return (uint8_t)constant;
+}
+
+// first add the value to the constant table
+// then emit an OP_CONSTANT instruction that pushes it onto the stack at runtime
+static void emitConstant(Value value) {
+    emitBytes(OP_CONSTANT, makeConstant(value));
+}
+
+static void endCompiler() {
+    emitReturn();
+}
+
+static void grouping() {
+    expression();
+    consume(TOKEN_RIGHT_PAREN, "Expected ')' after expression.");
+}
+
+static void number() {
+    double value = strtod(parser.previous.start, NULL);
+    emitConstant(value);
+}
+
+static void unary() {
+    TokenType operatorType = parser.previous.type;
+
+    // compile the operand
+    parsePrecedence(PREC_UNARY); // own PREC_UNARY precedence to permit nested unary expressions like !!d
+
+    // emit the operator instruction
+    switch(operatorType) {
+        case TOKEN_MINUS: 
+            emitByte(OP_NEGATE); 
+            break;
+        default: 
+            return;
+    }
+
+}
+
+// starts at the current token and parses any expression at the given precedence level or higher
+static void parsePrecedence(Precedence precedence) {
+
+}
+
+static void expression() {
+    parsePrecedence(PREC_ASSIGNMENT); // parse the lowest precedence level
+}
+
 bool compile(const char* source, Chunk* chunk) {
     initScanner(source);
+    compilingChunk = chunk;
 
     // reset from previous compile
     parser.hadError = false;
@@ -71,5 +164,6 @@ bool compile(const char* source, Chunk* chunk) {
     advance(); // prime the pump
     expression(); // parse single expression
     consume(TOKEN_EOF, "expect end of expression"); // check for EOF token
+    endCompiler();
     return !parser.hadError;
 }

@@ -1,9 +1,9 @@
 # clox
 
-<div align="center" >
+<div align="center">
   <img src="https://craftinginterpreters.com/image/a-map-of-the-territory/mountain.png" alt="ci mountain" height="400">
   <br/>
-  clox: C-based Lox compiler from crafting interpreters
+  clox: documented Lox compiler from <a href="https://craftinginterpreters.com/" target="_blank">Crafting Interpreters</a>
   <br/>
 </div>
 
