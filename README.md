@@ -3,7 +3,7 @@
 <div align="center" >
   <img src="https://craftinginterpreters.com/image/a-map-of-the-territory/mountain.png" alt="ci mountain" height="400">
   <br/>
-  clox: c-based compiler from crafting interpreters
+  clox: C-based Lox compiler from crafting interpreters
   <br/>
 </div>
 
@@ -17,10 +17,15 @@ make all
 
 ### Features
 - source code scanner/lexer
-- c-compiler
+- single pass compiler
 - stack-based bytecode VM
 - debugging disassembler
 
 NOTES:
+- A compiler has roughly two jobs. Many languages split the two roles into two separate passes
+  - It parses the user’s source code to understand what it means
+  - Then it takes that knowledge and outputs low-level instructions that produce the same semantics
+  - A parser produces an AST and then a code generator traverses the AST and outputs target code
+
 - bytecode > syntax trees
 - only supports double-precision floating point numbers
