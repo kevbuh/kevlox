@@ -22,10 +22,11 @@ make all
 - debugging disassembler
 
 NOTES:
+- binary operators are infix
+- unary are prefix
 - A compiler has roughly two jobs. Many languages split the two roles into two separate passes
   - It parses the user’s source code to understand what it means
   - Then it takes that knowledge and outputs low-level instructions that produce the same semantics
   - A parser produces an AST and then a code generator traverses the AST and outputs target code
-
 - bytecode > syntax trees
 - only supports double-precision floating point numbers

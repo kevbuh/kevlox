@@ -117,6 +117,25 @@ static void endCompiler() {
     emitReturn();
 }
 
+static void binary () {
+    // remember the operator
+    TokenType operatorType = parser.previous.type;
+
+    // compile the right operand
+    ParseRule* rule = getRule(operatorType);
+    parsePrecedence((Precedence)(rule->precedence + 1));
+
+    // emit bytecode of the operator instruction
+    switch (operatorType) {
+        case TOKEN_PLUS:  emitByte(OP_ADD); break;
+        case TOKEN_MINUS: emitByte(OP_SUBTRACT); break;
+        case TOKEN_STAR:  emitByte(OP_MULTIPLY); break;
+        case TOKEN_SLASH: emitByte(OP_DIVIDE); break;
+        default:
+            return;
+    }
+}
+
 static void grouping() {
     expression();
     consume(TOKEN_RIGHT_PAREN, "Expected ')' after expression.");
@@ -144,6 +163,7 @@ static void unary() {
 
 }
 
+// parse given precedence
 // starts at the current token and parses any expression at the given precedence level or higher
 static void parsePrecedence(Precedence precedence) {
 
