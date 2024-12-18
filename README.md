@@ -11,6 +11,8 @@
 
 ### How to run: 
 
+Go into code.txt and type in the code you want to run. Then run:
+
 ```bash
 make all
 ```
