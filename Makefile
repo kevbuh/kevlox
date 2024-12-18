@@ -1,7 +1,7 @@
 all: build run
 
 build:
-	gcc main.c chunk.c memory.c debug.c value.c vm.c compiler.c scanner.c -o clox
+	gcc clox/main.c clox/chunk.c clox/memory.c clox/debug.c clox/value.c clox/vm.c clox/compiler.c clox/scanner.c clox/value.c
 
 run:
-	./clox
+	./a.out
