@@ -25,11 +25,11 @@ static InterpretResult run() {
 
     for (;;) {
         #ifdef DEBUG_TRACE_EXECUTION
-        printf("          ");
+        printf("s        ");
         for (Value* slot = vm.stack; slot < vm.stackTop; slot++) {
-            printf("[ ");
+            printf("[");
             printValue(*slot);
-            printf(" ]");
+            printf("]");
         }
         printf("\n");
         disassembleInstruction(vm.chunk, (int)(vm.ip - vm.chunk->code));

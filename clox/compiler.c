@@ -64,7 +64,7 @@ static void errorAt(Token* token, const char* message) {
     parser.hadError = true;
 }
 
-static error(const char* message) {
+static void error(const char* message) {
     errorAt(&parser.previous, message);
 }
 
