@@ -78,7 +78,6 @@ static void advance() {
     for (;;) { // step forward through the token stream
         parser.current = scanToken(); // ask sanner for next token and store it
         if (parser.current.type != TOKEN_ERROR) break;
-
         errorAtCurrent(parser.current.start);
     }
 }
@@ -89,7 +88,6 @@ static void consume(TokenType type, const char* message) {
         advance();
         return;
     }
-
     errorAtCurrent(message);
 }
 
@@ -114,7 +112,6 @@ static uint8_t makeConstant(Value value) {
         error("Too many constants in one chunk");
         return 0;
     }
-
     return (uint8_t)constant;
 }
 
@@ -265,7 +262,7 @@ bool compile(const char* source, Chunk* chunk) {
 
     advance(); // prime the pump
     expression(); // parse single expression
-    consume(TOKEN_EOF, "expect end of expression"); // check for EOF token
+    consume(TOKEN_EOF, "Expected end of expression"); // check for EOF token
     endCompiler();
     return !parser.hadError;
 }

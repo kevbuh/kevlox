@@ -3,7 +3,8 @@
 #include "value.h"
 
 void disassembleChunk(Chunk* chunk, const char* name) {
-    printf("CNK   LN OP ===%s===       I VAL\n", name);
+    printf("===============%s===============\n", name);
+    printf("CHNK  LN OP                  i VAL\n");
 
     for (int offset = 0; offset < chunk->count;) {
         offset = disassembleInstruction(chunk, offset);
