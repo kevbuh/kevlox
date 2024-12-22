@@ -3,6 +3,20 @@
 
 #include "common.h"
 
+typedef enum {
+    VAL_BOOL,
+    VAL_NUL,
+    VAL_NUMBER,
+} ValueType;
+
+typedef struct {
+    ValueType type;
+    union {
+        bool boolean;
+        double member;
+    } as;
+} Value;
+
 typedef double Value;
 
 // constant pool: dynamic array of Values
