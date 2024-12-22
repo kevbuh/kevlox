@@ -68,18 +68,13 @@ static InterpretResult run() {
                 push(constant);
                 break;
             }
-            case OP_ADD:
-                BINARY_OP(NUMBER_VAL, +);
-                break;
-            case OP_SUBTRACT:
-                BINARY_OP(NUMBER_VAL, -);
-                break;
-            case OP_MULTIPLY:
-                BINARY_OP(NUMBER_VAL, *);
-                break;
-            case OP_DIVIDE:
-                BINARY_OP(NUMBER_VAL, /);
-                break;
+            case OP_NIL: push(NIL_VAL); break;
+            case OP_TRUE: push(BOOL_VAL(true)); break;
+            case OP_FALSE: push(BOOL_VAL(false)); break;
+            case OP_ADD: BINARY_OP(NUMBER_VAL, +); break;
+            case OP_SUBTRACT: BINARY_OP(NUMBER_VAL, -); break;
+            case OP_MULTIPLY: BINARY_OP(NUMBER_VAL, *); break;
+            case OP_DIVIDE: BINARY_OP(NUMBER_VAL, /); break;
             case OP_NEGATE:
                 if (!IS_NUMBER(peek(0))) {
                     runtimeError("Operand must be a number.");
@@ -120,6 +115,7 @@ InterpretResult interpret(const char* source) {
 
 void freeVM() {}
 
+// push onto top of stack
 void push(Value value) {
     *vm.stackTop = value; // store value at top of the stack (currently empty)
     vm.stackTop++;
