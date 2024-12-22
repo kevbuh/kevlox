@@ -13,7 +13,7 @@ typedef struct {
     ValueType type;
     union {
         bool boolean;
-        double member;
+        double number;
     } as;
 } Value;
 
@@ -33,7 +33,7 @@ typedef struct {
 // creates a Value object of type VAL_NUMBER and assigns the value to the number member of the union
 #define NUMBER_VAL(value) ((Value){VAL_NUMBER, {.number = value}})
 
-typedef double Value;
+// typedef double Value;
 
 // constant pool: dynamic array of Values
 // wraps a pointer to an array along with its allocated capacity and the number of elements in use
