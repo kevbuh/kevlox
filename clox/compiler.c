@@ -91,8 +91,8 @@ static void consume(TokenType type, const char* message) {
     errorAtCurrent(message);
 }
 
-// writes the given byte, which may be an opcode or an operand to an instruction
-// sends in the previous token’s line information so that runtime errors are associated with that line
+// writes the given byte to the chunk, which may be an opcode or an operand to an instruction
+// also sends in the previous token’s line information so that runtime errors are associated with that line
 static void emitByte(uint8_t byte) {
     writeChunk(currentChunk(), byte, parser.previous.line);
 }
@@ -180,6 +180,13 @@ static void number() {
     emitConstant(NUMBER_VAL(value));
 }
 
+static void string() {
+    // + trim lead  quotation mark
+    // - trim trailing quotation mark
+    // create a string object, wrap it ina value, stuffs it into the constant table
+    emitConstant(OBJ_VAL(copyString(parser.previous.start+1, parser.previous.length-2)));
+}
+
 static void unary() {
     TokenType operatorType = parser.previous.type;
 
@@ -217,7 +224,7 @@ ParseRule rules[] = {
   [TOKEN_LESS]          = {NULL, binary, PREC_COMPARISON},
   [TOKEN_LESS_EQUAL]    = {NULL, binary, PREC_COMPARISON},
   [TOKEN_IDENTIFIER]    = {NULL, NULL, PREC_NONE},
-  [TOKEN_STRING]        = {NULL, NULL, PREC_NONE},
+  [TOKEN_STRING]        = {string, NULL, PREC_NONE},
   [TOKEN_NUMBER]        = {number, NULL, PREC_NONE},
   [TOKEN_AND]           = {NULL, NULL, PREC_NONE},
   [TOKEN_CLASS]         = {NULL, NULL, PREC_NONE},
