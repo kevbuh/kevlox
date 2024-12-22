@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <stdarg.h>
+
 #include "common.h"
 #include "debug.h"
 #include "vm.h"
@@ -7,6 +9,20 @@ VM vm; // TODO: don't make this global
 
 static void resetStack() {
     vm.stackTop = vm.stack; //  point to the beginning of the array
+}
+
+// tell the user which line of their code was being executed when the error occurred
+static void runtimeError(const char* format, ...) {
+    // uses variadic functions -- take a varying number of arguments
+    va_list args; // lets us pass an abitrary number of arguments to runtimeError()
+    va_start(args, format);
+    vfprintf(stderr, format, args);
+    va_end(args);
+    fputs("\n", stderr);
+
+    size_t instruction = vm.ip - vm.chunk->code - 1;
+    int line = vm.chunk->lines[instruction];
+    fprintf(stderr, "[line %d] in script\n", line);
 }
 
 void initVM() {
@@ -54,6 +70,13 @@ static InterpretResult run() {
             case OP_DIVIDE:
                 BINARY_OP(/);
                 break;
+            case OP_NEGATE:
+                if (!IS_NUMBER(peek(0))) {
+                    runtimeError("Operand must be a number.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                push(NUMBER_VAL(-AS_NUMBER(pop())));
+                break;
             case OP_NEGATE: 
                 push(-pop());
                 break;
@@ -100,4 +123,8 @@ void push(Value value) {
 Value pop() {
     vm.stackTop--;
     return *vm.stackTop;
+}
+
+static Value peek(int distance) {
+    return vm.stackTop[-1 - distance];
 }

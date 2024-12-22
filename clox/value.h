@@ -5,7 +5,7 @@
 
 typedef enum {
     VAL_BOOL,
-    VAL_NUL,
+    VAL_NIL,
     VAL_NUMBER,
 } ValueType;
 
@@ -16,6 +16,22 @@ typedef struct {
         double member;
     } as;
 } Value;
+
+#define IS_BOOL(value)    ((value).type == VAL_BOOL)
+#define IS_NIL(value)     ((value).type == VAL_NIL)
+#define IS_NUMBER(value)  ((value).type == VAL_NUMBER)
+
+#define AS_BOOL(value)    ((value).as.boolean) // checks value as bool
+#define AS_NUMBER(value)  ((value).as.number)  // checks value as number
+
+// creates a Value object of type VAL_BOOL and assigns the value to the boolean member of the union
+#define BOOL_VAL(value)   ((Value){VAL_BOOL, {.boolean = value}})
+
+// creates a Value object of type VAL_NIL. Since VAL_NIL does not require any meaningful data, the .number member is simply initialized to 0
+#define NIL_VAL           ((Value){VAL_NIL,  {.number = 0}})
+
+// creates a Value object of type VAL_NUMBER and assigns the value to the number member of the union
+#define NUMBER_VAL(value) ((Value){VAL_NUMBER, {.number = value}})
 
 typedef double Value;
 
