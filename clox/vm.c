@@ -30,6 +30,7 @@ static void runtimeError(const char* format, ...) {
 
 void initVM() {
     resetStack();
+    vm.objects = NULL;
 }
 
 static Value peek(int distance) {
@@ -155,7 +156,10 @@ InterpretResult interpret(const char* source) {
     return result;
 }
 
-void freeVM() {}
+void freeVM() {
+    // free every object
+    freeObjects();
+}
 
 // push onto top of stack
 void push(Value value) {
