@@ -40,7 +40,7 @@ static uint32_t hashString(const char* key, int length) {
     return hash;
 }
 
-// we allocate a new array on the heap
+// allocate a new array on the heap
 ObjString* copyString(const char* chars, int length) {
     uint32_t hash = hashString(chars, length);
 

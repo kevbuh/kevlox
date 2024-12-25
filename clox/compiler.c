@@ -145,6 +145,7 @@ static void endCompiler() {
 static void expression();
 static void statement();
 static void declaration();
+static uint8_t identifierConstant(Token* name);
 static ParseRule* getRule(TokenType type);
 static void parsePrecedence(Precedence precedence);
 
@@ -200,6 +201,15 @@ static void string() {
     emitConstant(OBJ_VAL(copyString(parser.previous.start+1, parser.previous.length-2)));
 }
 
+static void namedVariable(Token name) {
+    uint8_t arg = identifierConstant(&name);
+    emitBytes(OP_GET_GLOBAL, arg);
+}
+
+static void variable() {
+    namedVariable(parser.previous);
+}
+
 static void unary() {
     TokenType operatorType = parser.previous.type;
 
@@ -236,7 +246,7 @@ ParseRule rules[] = {
   [TOKEN_GREATER_EQUAL] = {NULL, binary, PREC_COMPARISON},
   [TOKEN_LESS]          = {NULL, binary, PREC_COMPARISON},
   [TOKEN_LESS_EQUAL]    = {NULL, binary, PREC_COMPARISON},
-  [TOKEN_IDENTIFIER]    = {NULL, NULL, PREC_NONE},
+  [TOKEN_IDENTIFIER]    = {variable, NULL, PREC_NONE},
   [TOKEN_STRING]        = {string, NULL, PREC_NONE},
   [TOKEN_NUMBER]        = {number, NULL, PREC_NONE},
   [TOKEN_AND]           = {NULL, NULL, PREC_NONE},
@@ -278,7 +288,22 @@ static void parsePrecedence(Precedence precedence) {
     }
 }
 
-// returs rule from parse fn table
+// takes the given token and adds its lexeme to the chunk’s constant table as a string and then returns the index of that constant in the constant table
+static uint8_t identifierConstant(Token* name) {
+    return makeConstant(OBJ_VAL(copyString(name->start, name->length)));
+}
+
+// parses a variable
+static uint8_t parseVariable(const char* errorMessage) {
+    consume(TOKEN_IDENTIFIER, errorMessage);
+    return identifierConstant(&parser.previous);
+}
+
+static void defineVariable(uint8_t global) {
+    emitBytes(OP_DEFINE_GLOBAL, global);
+}
+
+// returns rule from parse function table
 static ParseRule* getRule(TokenType type) {
     return &rules[type];
 }
@@ -293,13 +318,26 @@ static void expressionStatement() {
     emitByte(OP_POP);
 }
 
+static void varDeclaration() {
+    uint8_t global = parseVariable("Expected variable name");
+
+    if (match(TOKEN_EQUAL)) {
+        expression();
+    } else {
+        emitByte(OP_NIL);
+    }
+    consume(TOKEN_SEMICOLON, "Expected ';' after variable declaration");
+
+    defineVariable(global);
+}
+
 static void printStatement() {
     expression();
     consume(TOKEN_SEMICOLON, "Expected ';' after value.");
     emitByte(OP_PRINT);
 }
 
-// recover from this panic and continue parsing at a logical point in the source code, rather than halting entirely or producing a cascade of errors
+// recover from this panicMode and continue parsing at a logical point in the source code, rather than halting entirely or producing a cascade of errors
 // we skip tokens indiscriminately until statement boundary
 static void synchronize() {
     parser.panicMode = false;
@@ -328,7 +366,11 @@ static void synchronize() {
 }
 
 static void declaration() {
-    statement();
+    if (match(TOKEN_VAR)) {
+        varDeclaration();
+    } else {
+        statement();
+    }
 
     if (parser.panicMode) synchronize();
 }
