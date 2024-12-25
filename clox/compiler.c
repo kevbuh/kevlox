@@ -323,10 +323,11 @@ static void expression() {
     parsePrecedence(PREC_ASSIGNMENT); 
 }
 
+// handler for statements that consist of a single expression followed by a semicolon
 static void expressionStatement() {
     expression();
     consume(TOKEN_SEMICOLON, "Expected ';' after value.");
-    emitByte(OP_POP);
+    emitByte(OP_POP); // we added into the hashmap so we can clear from the stack 
 }
 
 static void varDeclaration() {
@@ -350,6 +351,7 @@ static void printStatement() {
 
 // recover from this panicMode and continue parsing at a logical point in the source code, rather than halting entirely or producing a cascade of errors
 // we skip tokens indiscriminately until statement boundary
+// aka error synchronization
 static void synchronize() {
     parser.panicMode = false;
 
@@ -386,6 +388,7 @@ static void declaration() {
     if (parser.panicMode) synchronize();
 }
 
+// dispatcher that determines what kind of statement it's looking at and calls the appropriate handler
 static void statement() {
     if(match(TOKEN_PRINT)) {
         printStatement();
