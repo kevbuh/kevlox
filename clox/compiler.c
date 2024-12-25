@@ -287,9 +287,15 @@ static void expression() {
     parsePrecedence(PREC_ASSIGNMENT); // parse the lowest precedence level
 }
 
+static void expressionStatement() {
+    expression();
+    consume(TOKEN_SEMICOLON, "Expected ';' after value.");
+    emitByte(OP_POP);
+}
+
 static void printStatement() {
     expression();
-    consume(TOKEN_SEMICOLON, "Expect ';' after value.");
+    consume(TOKEN_SEMICOLON, "Expected ';' after value.");
     emitByte(OP_PRINT);
 }
 
@@ -300,6 +306,8 @@ static void declaration() {
 static void statement() {
     if(match(TOKEN_PRINT)) {
         printStatement();
+    } else {
+        expression();
     }
 }
 
