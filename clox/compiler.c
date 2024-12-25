@@ -91,6 +91,17 @@ static void consume(TokenType type, const char* message) {
     errorAtCurrent(message);
 }
 
+// returns checks if current parser toekn has the given type
+static bool check(TokenType type) {
+    return parser.current.type == type;
+}
+
+static bool match(TokenType type) {
+    if (!check(type)) return false;
+    advance();
+    return true;
+}
+
 // writes the given byte to the chunk, which may be an opcode or an operand to an instruction
 // also sends in the previous token’s line information so that runtime errors are associated with that line
 static void emitByte(uint8_t byte) {
@@ -132,6 +143,8 @@ static void endCompiler() {
 
 // forward declare
 static void expression();
+static void statement();
+static void declaration();
 static ParseRule* getRule(TokenType type);
 static void parsePrecedence(Precedence precedence);
 
@@ -274,6 +287,22 @@ static void expression() {
     parsePrecedence(PREC_ASSIGNMENT); // parse the lowest precedence level
 }
 
+static void printStatement() {
+    expression();
+    consume(TOKEN_SEMICOLON, "Expect ';' after value.");
+    emitByte(OP_PRINT);
+}
+
+static void declaration() {
+    statement();
+}
+
+static void statement() {
+    if(match(TOKEN_PRINT)) {
+        printStatement();
+    }
+}
+
 bool compile(const char* source, Chunk* chunk) {
     initScanner(source);
     compilingChunk = chunk;
@@ -283,8 +312,14 @@ bool compile(const char* source, Chunk* chunk) {
     parser.panicMode = false;
 
     advance(); // prime the pump
-    expression(); // parse single expression
-    consume(TOKEN_EOF, "Expected end of expression"); // check for EOF token
+
+    // We keep compiling declarations until we hit the end of the source file
+    while (!match(TOKEN_EOF)) {
+        declaration();
+    }
+
+    // expression(); // parse single expression
+    // consume(TOKEN_EOF, "Expected end of expression"); // check for EOF token
     endCompiler();
     return !parser.hadError;
 }
