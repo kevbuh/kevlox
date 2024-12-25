@@ -19,11 +19,13 @@ struct Obj {
     struct Obj* next;
 };
 
+// strings are immutable
 struct ObjString {
     // C struct fields are arranged in memory in the order that they are declared
     Obj obj; 
     int length; // number of bytes
     char* chars; // array of characters
+    uint32_t hash; // O(n)
 };
 
 ObjString* takeString(char* chars, int length);
