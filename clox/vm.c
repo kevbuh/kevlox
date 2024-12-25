@@ -31,6 +31,7 @@ static void runtimeError(const char* format, ...) {
 void initVM() {
     resetStack();
     vm.objects = NULL;
+    initTable(&vm.strings);
 }
 
 static Value peek(int distance) {
@@ -157,6 +158,7 @@ InterpretResult interpret(const char* source) {
 }
 
 void freeVM() {
+    freeTable(&vm.strings);
     // free every object
     freeObjects();
 }
