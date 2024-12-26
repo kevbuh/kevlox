@@ -490,8 +490,9 @@ static void ifStatement() {
     int elseJump = emitJump(OP_JUMP);
     patchJump(thenJump);
     emitByte(OP_POP);
-    
+
     if (match(TOKEN_ELSE)) statement();
+    patchJump(elseJump);
 }
 
 // keep parsing declarations and statements until it hits the closing brace
