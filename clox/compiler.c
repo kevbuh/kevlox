@@ -481,11 +481,17 @@ static void ifStatement() {
     expression();
     consume(TOKEN_RIGHT_PAREN, "Expected ')' after 'if' statement");
 
-    // how much to offset the instruction pointer in bytes of code to skip
+    // how much to offset the instruction pointer in bytes of code to skip if false
     int thenJump = emitJump(OP_JUMP_IF_FALSE);
+    emitByte(OP_POP);
     statement();
 
+    // else
+    int elseJump = emitJump(OP_JUMP);
     patchJump(thenJump);
+    emitByte(OP_POP);
+    
+    if (match(TOKEN_ELSE)) statement();
 }
 
 // keep parsing declarations and statements until it hits the closing brace

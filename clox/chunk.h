@@ -25,6 +25,7 @@ typedef enum {
     OP_NOT,
     OP_NEGATE,   // 00: 2 bytes, [opcode, val to negate]
     OP_PRINT,
+    OP_JUMP,
     OP_JUMP_IF_FALSE,
     OP_RETURN,   // 01: 1 byte opcode
 } OpCode;
