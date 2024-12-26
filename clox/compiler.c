@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "common.h"
 #include "compiler.h"
@@ -165,8 +166,14 @@ static void beginScope() {
     current->scopeDepth++;
 }
 
-// subtracts scope depth
+// subtracts scope depth and removes locals from previous scope
 static void endScope() {
+
+    while(current->localCount > 0 && current->locals[current->localCount -1].depth > current->scopeDepth) {
+        emitByte(OP_POP);
+        current->localCount--;
+    }
+
     current->scopeDepth--;
 }
 
@@ -332,13 +339,59 @@ static uint8_t identifierConstant(Token* name) {
     return makeConstant(OBJ_VAL(copyString(name->start, name->length)));
 }
 
+static bool identifiersEqual(Token* a, Token* b) {
+    if (a->length != b->length) return false;
+    return memcmp(a->start, b->start, a->length) == 0;
+}
+
+// initializes next available local in the compiler's array of variables
+// stores the var name and depth of the scope that owns the variable
+static void addLocal(Token name) {
+    if (current->localCount == UINT8_COUNT) {
+        error("Too many local variables in function.");
+        return;
+    }
+
+    Local* local = &current->locals[current->localCount++];
+    local->name = name;
+    local->depth = current->scopeDepth;
+}
+
+static void declareVariable() {
+    if (current->scopeDepth == 0) return; // only declare locals if we're not in the top level global scope
+
+    Token* name = &parser.previous;
+
+    // prevent declaring variables twice (e.g. int a=1; int a=2;)
+    for (int i = current->localCount -1; i >= 0; i--) {
+        Local* local = &current->locals[i];
+        if (local->depth != -1 && local->depth < current->scopeDepth) {
+            break;
+        }
+
+        if (identifiersEqual(name, &local->name)) {
+            error("Already a variable with this name in this scope");
+        }
+    }
+
+    addLocal(*name);
+}
+
 // parses a variable
 static uint8_t parseVariable(const char* errorMessage) {
     consume(TOKEN_IDENTIFIER, errorMessage);
+
+    declareVariable();
+    if (current->scopeDepth > 0) return 0; // exit if we're in a local scope
+
     return identifierConstant(&parser.previous);
 }
 
 static void defineVariable(uint8_t global) {
+    if (current->scopeDepth > 0) {
+        return;
+    }
+
     emitBytes(OP_DEFINE_GLOBAL, global);
 }
 
@@ -370,7 +423,7 @@ static void block() {
 
 static void varDeclaration() {
     uint8_t global = parseVariable("Expected variable name");
-    
+
     if (match(TOKEN_EQUAL)) {
         expression();
     } else {
