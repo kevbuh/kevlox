@@ -25,15 +25,16 @@ typedef enum {
     OP_NOT,
     OP_NEGATE,   // 00: 2 bytes, [opcode, val to negate]
     OP_PRINT,
+    OP_JUMP_IF_FALSE,
     OP_RETURN,   // 01: 1 byte opcode
 } OpCode;
 
 typedef struct {
-    int count;
-    int capacity;
-    uint8_t* code; // array of bytes
-    int* lines;
-    ValueArray constants;
+    int count; // current number of bytes of bytecode in the code array.
+    int capacity; // total allocated capacity of the code array
+    uint8_t* code; // array that holds the bytecode instructions
+    int* lines; // maps each byte of bytecode in code to its corresponding source code line number
+    ValueArray constants; // array of constants used by the bytecode in this chunk
 } Chunk; // Bytecode is a series of instructions
 
 void initChunk(Chunk* chunk);

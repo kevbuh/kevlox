@@ -127,6 +127,15 @@ static void emitBytes(uint8_t byte1, uint8_t byte2) {
     emitByte(byte2);
 }
 
+// =============== emit ===============
+
+static int emitJump(uint8_t instruction) {
+    emitByte(instruction); // writes the opcode for the jump instruction to the current chunk of bytecode
+    emitByte(0xff); // placeholder
+    emitByte(0xff); // placeholder
+    return currentChunk()->count - 2; // returns the index of the first placeholder byte
+}
+
 static void emitReturn() {
     emitByte(OP_RETURN);
 }
@@ -146,6 +155,21 @@ static void emitConstant(Value value) {
     emitBytes(OP_CONSTANT, makeConstant(value));
 }
 
+// backpatching
+static void patchJump(int offset) {
+    // -2 to adjust for the bytecode for the jump offset itself.
+    int jump = currentChunk()->count - offset - 2;
+
+    if (jump > UINT16_MAX) {
+        error("Jump limit UINT16_MAX exceeded");
+    }
+
+    currentChunk()->code[offset] = (jump >> 8) & 0xff; // Extracts the high byte of the 16-bit jump offset
+    currentChunk()->code[offset + 1] = jump & 0xff; // Extracts the low byte of the 16-bit jump offset
+}
+
+// =============== compiler helpers ===============
+
 static void initCompiler(Compiler* compiler) {
     compiler->localCount = 0;
     compiler->scopeDepth = 0;
@@ -161,6 +185,8 @@ static void endCompiler() {
     #endif
 }
 
+// =============== scope ===============
+
 // adds scope depth
 static void beginScope() {
     current->scopeDepth++;
@@ -168,7 +194,6 @@ static void beginScope() {
 
 // subtracts scope depth and removes locals from previous scope
 static void endScope() {
-
     while(current->localCount > 0 && current->locals[current->localCount -1].depth > current->scopeDepth) {
         emitByte(OP_POP);
         current->localCount--;
@@ -177,7 +202,8 @@ static void endScope() {
     current->scopeDepth--;
 }
 
-// forward declare
+// =============== forward declarations ===============
+
 static void expression();
 static void statement();
 static void declaration();
@@ -185,6 +211,8 @@ static uint8_t identifierConstant(Token* name);
 static ParseRule* getRule(TokenType type);
 static void parsePrecedence(Precedence precedence);
 static int resolveLocal(Compiler* compiler, Token* name);
+
+// =============== ops ===============
 
 static void binary(bool canAssign) {
     // remember the operator
@@ -277,6 +305,8 @@ static void unary(bool canAssign) {
             return; // unreachable
     }
 }
+
+// =============== parse table ===============
 
 // {prefix fn, infix fn, infix precedence}
 ParseRule rules[] = {
@@ -444,6 +474,20 @@ static void expressionStatement() {
     emitByte(OP_POP); // we added into the hashmap so we can clear from the stack 
 }
 
+static void ifStatement() {
+    // compile the condition expression bracketed by parentheses
+    // at runtime the condition value will be at the top of the stack, which we can use to execute the then branch or skip it
+    consume(TOKEN_LEFT_PAREN, "Expected '(' after 'if' statement");
+    expression();
+    consume(TOKEN_RIGHT_PAREN, "Expected ')' after 'if' statement");
+
+    // how much to offset the instruction pointer in bytes of code to skip
+    int thenJump = emitJump(OP_JUMP_IF_FALSE);
+    statement();
+
+    patchJump(thenJump);
+}
+
 // keep parsing declarations and statements until it hits the closing brace
 static void block() {
     while (!check(TOKEN_RIGHT_BRACE) && !check(TOKEN_EOF)) {
@@ -515,6 +559,8 @@ static void declaration() {
 static void statement() {
     if(match(TOKEN_PRINT)) {
         printStatement();
+    } else if (match(TOKEN_IF)) {
+        ifStatement();
     } else if (match(TOKEN_LEFT_BRACE)) { // parse intitial curly brace
         beginScope();
         block();
