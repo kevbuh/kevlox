@@ -39,7 +39,20 @@ typedef struct {
     Precedence precedence;
 } ParseRule;
 
+typedef struct {
+    Token name; // name of variable
+    int depth; // depth of the block where the local variable was declared
+} Local;
+
+// simple flat array of all locals that are in scope during each point in the compilation process
+typedef struct {
+    Local locals[UINT8_COUNT];
+    int localCount;
+    int scopeDepth;
+} Compiler;
+
 Parser parser;
+Compiler* current = NULL;
 Chunk* compilingChunk;
 
 static Chunk* currentChunk() {
@@ -132,6 +145,12 @@ static void emitConstant(Value value) {
     emitBytes(OP_CONSTANT, makeConstant(value));
 }
 
+static void initCompiler(Compiler* compiler) {
+    compiler->localCount = 0;
+    compiler->scopeDepth = 0;
+    current = compiler;
+}
+
 static void endCompiler() {
     emitReturn();
     #ifdef DEBUG_PRINT_CODE
@@ -139,6 +158,16 @@ static void endCompiler() {
         disassembleChunk(currentChunk(), "code");
     }
     #endif
+}
+
+// adds scope depth
+static void beginScope() {
+    current->scopeDepth++;
+}
+
+// subtracts scope depth
+static void endScope() {
+    current->scopeDepth--;
 }
 
 // forward declare
@@ -330,9 +359,18 @@ static void expressionStatement() {
     emitByte(OP_POP); // we added into the hashmap so we can clear from the stack 
 }
 
+// keep parsing declarations and statements until it hits the closing brace
+static void block() {
+    while (!check(TOKEN_RIGHT_BRACE) && !check(TOKEN_EOF)) {
+        declaration();
+    }
+
+    consume(TOKEN_RIGHT_BRACE, "Expected '}' after block");
+}
+
 static void varDeclaration() {
     uint8_t global = parseVariable("Expected variable name");
-
+    
     if (match(TOKEN_EQUAL)) {
         expression();
     } else {
@@ -392,6 +430,10 @@ static void declaration() {
 static void statement() {
     if(match(TOKEN_PRINT)) {
         printStatement();
+    } else if (match(TOKEN_LEFT_BRACE)) { // parse intitial curly brace
+        beginScope();
+        block();
+        endScope();
     } else {
         expressionStatement();
     }
@@ -399,6 +441,8 @@ static void statement() {
 
 bool compile(const char* source, Chunk* chunk) {
     initScanner(source);
+    Compiler compiler;
+    initCompiler(&compiler);
     compilingChunk = chunk;
 
     // reset from previous compile
