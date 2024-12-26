@@ -10,7 +10,7 @@
 typedef struct {
     Chunk* chunk;
     uint8_t* ip; // instruction pointer
-    Value stack[STACK_MAX];
+    Value stack[STACK_MAX]; // bytecode stack
     Value* stackTop; // points to where the next value to be pushed will go
     Table globals; // global variables
     Table strings; // string table for string interning

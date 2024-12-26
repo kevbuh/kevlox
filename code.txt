@@ -2,6 +2,10 @@ var breakfast = "beignets";
 var beverage = "cafe au lait";
 breakfast = "beignets with " + beverage;
 
-print breakfast;
+{
+    var a = 99;
+    print a;
+}
 
+print breakfast;
 print "TITI";
