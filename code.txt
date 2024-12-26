@@ -1,11 +1,11 @@
-var breakfast = "beignets";
-var beverage = "cafe au lait";
-breakfast = "beignets with " + beverage;
+var a = true or true;
+print a;
 
-if (1 and 1) {
-    var a = 99;
-    print a;
-}
+var b = true or false;
+print b;
 
-print breakfast;
-print "TITI";
+var c = false or true;
+print c;
+
+var d = false or false;
+print d;

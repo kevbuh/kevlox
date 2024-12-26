@@ -260,6 +260,21 @@ static void number(bool canAssign) {
     emitConstant(NUMBER_VAL(value));
 }
 
+static void or_(bool canAssign) {
+  // Jump to parse the second operand if the first is falsy
+  int elseJump = emitJump(OP_JUMP_IF_FALSE);
+
+  // Skip parsing the second operand if the first is truthy
+  int endJump = emitJump(OP_JUMP);
+
+  patchJump(elseJump);      // Patch to continue parsing the second operand
+  emitByte(OP_POP);         // Pop the first operand
+
+  parsePrecedence(PREC_OR); // Parse the second operand
+  patchJump(endJump);       // Patch to skip the second operand if already evaluated
+}
+
+
 static void string(bool canAssign) {
     // + trim lead  quotation mark
     // - trim trailing quotation mark
@@ -341,7 +356,7 @@ ParseRule rules[] = {
   [TOKEN_FUN]           = {NULL, NULL, PREC_NONE},
   [TOKEN_IF]            = {NULL, NULL, PREC_NONE},
   [TOKEN_NIL]           = {literal, NULL, PREC_NONE},
-  [TOKEN_OR]            = {NULL, NULL, PREC_NONE},
+  [TOKEN_OR]            = {NULL, or_, PREC_OR},
   [TOKEN_PRINT]         = {NULL, NULL, PREC_NONE},
   [TOKEN_RETURN]        = {NULL, NULL, PREC_NONE},
   [TOKEN_SUPER]         = {NULL, NULL, PREC_NONE},
