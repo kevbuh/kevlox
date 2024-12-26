@@ -155,7 +155,7 @@ static void emitConstant(Value value) {
     emitBytes(OP_CONSTANT, makeConstant(value));
 }
 
-// backpatching
+// backpatching: replaces the placeholder with the correct offset once it’s known
 static void patchJump(int offset) {
     // -2 to adjust for the bytecode for the jump offset itself.
     int jump = currentChunk()->count - offset - 2;
@@ -211,6 +211,7 @@ static uint8_t identifierConstant(Token* name);
 static ParseRule* getRule(TokenType type);
 static void parsePrecedence(Precedence precedence);
 static int resolveLocal(Compiler* compiler, Token* name);
+static void and_(bool canAssign);
 
 // =============== ops ===============
 
@@ -332,7 +333,7 @@ ParseRule rules[] = {
   [TOKEN_IDENTIFIER]    = {variable, NULL, PREC_NONE},
   [TOKEN_STRING]        = {string, NULL, PREC_NONE},
   [TOKEN_NUMBER]        = {number, NULL, PREC_NONE},
-  [TOKEN_AND]           = {NULL, NULL, PREC_NONE},
+  [TOKEN_AND]           = {NULL, and_, PREC_AND},
   [TOKEN_CLASS]         = {NULL, NULL, PREC_NONE},
   [TOKEN_ELSE]          = {NULL, NULL, PREC_NONE},
   [TOKEN_FALSE]         = {literal, NULL, PREC_NONE},
@@ -457,6 +458,15 @@ static void defineVariable(uint8_t global) {
     emitBytes(OP_DEFINE_GLOBAL, global);
 }
 
+static void and_(bool canAssign) {
+    int endJump = emitJump(OP_JUMP_IF_FALSE);
+
+    emitByte(OP_POP);
+    parsePrecedence(PREC_AND);
+
+    patchJump(endJump);
+}
+
 // returns rule from parse function table
 static ParseRule* getRule(TokenType type) {
     return &rules[type];
@@ -492,7 +502,7 @@ static void ifStatement() {
     emitByte(OP_POP);
 
     if (match(TOKEN_ELSE)) statement();
-    patchJump(elseJump);
+    patchJump(elseJump); // ensures the jump from the then block skips over the else block
 }
 
 // keep parsing declarations and statements until it hits the closing brace

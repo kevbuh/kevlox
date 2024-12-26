@@ -2,7 +2,7 @@ var breakfast = "beignets";
 var beverage = "cafe au lait";
 breakfast = "beignets with " + beverage;
 
-if (1+1) {
+if (1 and 1) {
     var a = 99;
     print a;
 }
