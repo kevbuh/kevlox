@@ -116,6 +116,8 @@ static bool match(TokenType type) {
     return true;
 }
 
+// =============== emit ===============
+
 // writes the given byte to the chunk, which may be an opcode or an operand to an instruction
 // also sends in the previous token’s line information so that runtime errors are associated with that line
 static void emitByte(uint8_t byte) {
@@ -127,7 +129,15 @@ static void emitBytes(uint8_t byte1, uint8_t byte2) {
     emitByte(byte2);
 }
 
-// =============== emit ===============
+static void emitLoop(int loopStart) {
+    emitByte(OP_LOOP);
+
+    int offset = currentChunk()->count - loopStart + 2;
+    if (offset > UINT16_MAX) error("Loop body too large.");
+
+    emitByte((offset >> 8) & 0xff); // top byte
+    emitByte(offset & 0xff); // bottom byte
+}
 
 static int emitJump(uint8_t instruction) {
     emitByte(instruction); // writes the opcode for the jump instruction to the current chunk of bytecode
@@ -156,7 +166,7 @@ static void emitConstant(Value value) {
 }
 
 // backpatching: replaces the placeholder with the correct offset once it’s known
-static void patchJump(int offset) {
+static void backpatchJump(int offset) {
     // -2 to adjust for the bytecode for the jump offset itself.
     int jump = currentChunk()->count - offset - 2;
 
@@ -267,11 +277,11 @@ static void or_(bool canAssign) {
   // Skip parsing the second operand if the first is truthy
   int endJump = emitJump(OP_JUMP);
 
-  patchJump(elseJump);      // Patch to continue parsing the second operand
+  backpatchJump(elseJump);      // Patch to continue parsing the second operand
   emitByte(OP_POP);         // Pop the first operand
 
   parsePrecedence(PREC_OR); // Parse the second operand
-  patchJump(endJump);       // Patch to skip the second operand if already evaluated
+  backpatchJump(endJump);       // Patch to skip the second operand if already evaluated
 }
 
 
@@ -479,7 +489,7 @@ static void and_(bool canAssign) {
     emitByte(OP_POP);
     parsePrecedence(PREC_AND);
 
-    patchJump(endJump);
+    backpatchJump(endJump);
 }
 
 // returns rule from parse function table
@@ -513,11 +523,11 @@ static void ifStatement() {
 
     // else
     int elseJump = emitJump(OP_JUMP);
-    patchJump(thenJump);
+    backpatchJump(thenJump);
     emitByte(OP_POP);
 
     if (match(TOKEN_ELSE)) statement();
-    patchJump(elseJump); // ensures the jump from the then block skips over the else block
+    backpatchJump(elseJump); // ensures the jump from the then block skips over the else block
 }
 
 // keep parsing declarations and statements until it hits the closing brace
@@ -546,6 +556,21 @@ static void printStatement() {
     expression();
     consume(TOKEN_SEMICOLON, "Expected ';' after value.");
     emitByte(OP_PRINT);
+}
+
+static void whileStatement() {
+    int loopStart = currentChunk()->count;
+    consume(TOKEN_LEFT_PAREN, "Expect '(' after 'while'.");
+    expression();
+    consume(TOKEN_RIGHT_PAREN, "Expect ')' after condition.");
+
+    int exitJump = emitJump(OP_JUMP_IF_FALSE);
+    emitByte(OP_POP);
+    statement();
+    emitLoop(loopStart);
+
+    backpatchJump(exitJump);
+    emitByte(OP_POP);
 }
 
 // recover from this panicMode and continue parsing at a logical point in the source code, rather than halting entirely or producing a cascade of errors
@@ -593,6 +618,8 @@ static void statement() {
         printStatement();
     } else if (match(TOKEN_IF)) {
         ifStatement();
+    } else if (match(TOKEN_WHILE)) {
+        whileStatement();
     } else if (match(TOKEN_LEFT_BRACE)) { // parse intitial curly brace
         beginScope();
         block();

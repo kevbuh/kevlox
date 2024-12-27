@@ -1,11 +1,7 @@
-var a = true or true;
-print a;
 
-var b = true or false;
-print b;
+var count = 0;
 
-var c = false or true;
-print c;
-
-var d = false or false;
-print d;
+while (count < 5) {
+    count = count + 1;
+    print count;
+}
