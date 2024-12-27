@@ -129,6 +129,7 @@ static void emitBytes(uint8_t byte1, uint8_t byte2) {
     emitByte(byte2);
 }
 
+// writes loop to byte chunk
 static void emitLoop(int loopStart) {
     emitByte(OP_LOOP);
 
@@ -222,6 +223,7 @@ static ParseRule* getRule(TokenType type);
 static void parsePrecedence(Precedence precedence);
 static int resolveLocal(Compiler* compiler, Token* name);
 static void and_(bool canAssign);
+static void varDeclaration();
 
 // =============== ops ===============
 
@@ -509,6 +511,73 @@ static void expressionStatement() {
     emitByte(OP_POP); // we added into the hashmap so we can clear from the stack 
 }
 
+
+static void forStatement() {
+  // new scope for the for loop
+  beginScope();
+
+  // consume the opening parenthesis after 'for'
+  consume(TOKEN_LEFT_PAREN, "Expected '(' after 'for'.");
+
+  // Handle the initializer part of the for loop
+  if (match(TOKEN_SEMICOLON)) {
+    // No initializer present
+  } else if (match(TOKEN_VAR)) {
+    // variable declaration as the initializer
+    varDeclaration();
+  } else {
+    // expression as the initializer
+    expressionStatement();
+  }
+
+  // start of the loop body
+  int loopStart = currentChunk()->count;
+
+  // Handle exit condition of the for loop
+  int exitJump = -1;
+  if (!match(TOKEN_SEMICOLON)) {
+    // Parse the exit condition expression
+    expression();
+    consume(TOKEN_SEMICOLON, "Expected ';' in for loop condition.");
+
+    // Emit a jump instruction to exit the loop if the condition is false
+    exitJump = emitJump(OP_JUMP_IF_FALSE);
+    emitByte(OP_POP); // Pop the condition value from the stack
+  }
+
+  // Handle increment part of the for loop
+  if (!match(TOKEN_RIGHT_PAREN)) {
+    // Jump to loop body
+    int bodyJump = emitJump(OP_JUMP);
+
+    // Mark start of the increment expression
+    int incrementStart = currentChunk()->count;
+    expression();
+    emitByte(OP_POP); // Pop the increment value from the stack
+    consume(TOKEN_RIGHT_PAREN, "Expected ')' after 'for' clause.");
+
+    // Emit a loop instruction to jump back to the start of the loop
+    emitLoop(loopStart);
+    loopStart = incrementStart;
+    backpatchJump(bodyJump);
+  }
+
+  // Parse the loop body statement
+  statement();
+
+  // Emit a loop instruction to jump back to the start of the loop
+  emitLoop(loopStart);
+
+  // Patch the exit jump if an exit condition was present
+  if (exitJump != -1) {
+    backpatchJump(exitJump);
+    emitByte(OP_POP); // Pop the condition value from the stack
+  }
+
+  // End the scope of the for loop
+  endScope();
+}
+
 static void ifStatement() {
     // compile the condition expression bracketed by parentheses
     // at runtime the condition value will be at the top of the stack, which we can use to execute the then branch or skip it
@@ -616,6 +685,8 @@ static void declaration() {
 static void statement() {
     if(match(TOKEN_PRINT)) {
         printStatement();
+    } else if (match(TOKEN_FOR)) {
+        forStatement();
     } else if (match(TOKEN_IF)) {
         ifStatement();
     } else if (match(TOKEN_WHILE)) {
