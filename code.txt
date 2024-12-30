@@ -1,5 +1,10 @@
-fun sum(a, b, c) {
-  return a + b + c;
+fun fib(n) {
+  if (n < 2) return n;
+  return fib(n - 2) + fib(n - 1);
 }
 
-print 4 + sum(5, 6, 7);
+var start = clock();
+print "Fib35 result:";
+print fib(35);
+print "Time (s):";
+print clock() - start;
