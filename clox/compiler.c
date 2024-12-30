@@ -42,7 +42,7 @@ typedef struct {
 
 typedef struct {
     Token name; // name of variable
-    int depth; // depth of the block where the local variable was declared
+    int depth;  // depth of the block where the local variable was declared
 } Local;
 
 // lets the compiler tell when it’s compiling top-level code versus the body of a function
@@ -52,7 +52,8 @@ typedef enum FunctionType {
 } FunctionType;
 
 // simple flat array of all locals that are in scope during each point in the compilation process
-typedef struct {
+typedef struct Compiler {
+    struct Compiler* enclosing;
     ObjFunction* function;
     FunctionType type;
     
@@ -157,6 +158,7 @@ static int emitJump(uint8_t instruction) {
 }
 
 static void emitReturn() {
+    emitByte(OP_NIL);
     emitByte(OP_RETURN);
 }
 
@@ -191,6 +193,8 @@ static void backpatchJump(int offset) {
 // =============== compiler helpers ===============
 
 static void initCompiler(Compiler* compiler, FunctionType type) {
+    compiler->enclosing = current;
+
     compiler->function = NULL;
     compiler->type = type;
     compiler->localCount = 0;
@@ -198,6 +202,11 @@ static void initCompiler(Compiler* compiler, FunctionType type) {
     compiler->function = newFunction();
 
     current = compiler;
+
+    // set function name, we've already parsed it
+    if (type != TYPE_SCRIPT) {
+        current->function->name = copyString(parser.previous.start, parser.previous.length);
+    }
 
     // initialize the first local variable slot
     Local* local = &current->locals[current->localCount++];
@@ -214,6 +223,7 @@ static ObjFunction* endCompiler() {
         disassembleChunk(currentChunk(), function->name != NULL ? function->name->chars : "<script>");
     #endif
 
+    current = current->enclosing;
     return function;
 }
 
@@ -245,6 +255,7 @@ static void parsePrecedence(Precedence precedence);
 static int resolveLocal(Compiler* compiler, Token* name);
 static void and_(bool canAssign);
 static void varDeclaration();
+static uint8_t argumentList();
 
 // =============== ops ===============
 
@@ -271,6 +282,11 @@ static void binary(bool canAssign) {
         default:
             return;
     }
+}
+
+static void call(bool canAssign) {
+    uint8_t argCount = argumentList();
+    emitBytes(OP_CALL, argCount);
 }
 
 static void literal(bool canAssign) {
@@ -359,7 +375,7 @@ static void unary(bool canAssign) {
 
 // {prefix fn, infix fn, infix precedence}
 ParseRule rules[] = {
-  [TOKEN_LEFT_PAREN]    = {grouping, NULL, PREC_NONE},
+  [TOKEN_LEFT_PAREN]    = {grouping, call, PREC_CALL},
   [TOKEN_RIGHT_PAREN]   = {NULL, NULL, PREC_NONE},
   [TOKEN_LEFT_BRACE]    = {NULL, NULL, PREC_NONE},  
   [TOKEN_RIGHT_BRACE]   = {NULL, NULL, PREC_NONE},
@@ -494,9 +510,11 @@ static uint8_t parseVariable(const char* errorMessage) {
 }
 
 static void markInitialized() {
+    if (current->scopeDepth == 0) return; // function bound to a global variable
     current->locals[current->localCount-1].depth = current->scopeDepth;
 }
 
+// define global variable and writes op code to chunk
 static void defineVariable(uint8_t global) {
     if (current->scopeDepth > 0) {
         markInitialized();
@@ -504,6 +522,24 @@ static void defineVariable(uint8_t global) {
     }
 
     emitBytes(OP_DEFINE_GLOBAL, global);
+}
+
+// returns the number of arguments it compiled
+static uint8_t argumentList() {
+    uint8_t argCount = 0;
+
+    // parse arguments
+    if (!check(TOKEN_RIGHT_PAREN)) {
+        do {
+            expression();
+            if (argCount == 255) {
+                error("Can't have more than 255 arguments.");
+            }
+            argCount++;
+        } while (match(TOKEN_COMMA));
+    }
+    consume(TOKEN_RIGHT_PAREN, "Expected ')' after arguments.");
+    return argCount;
 }
 
 static void and_(bool canAssign) {
@@ -531,7 +567,6 @@ static void expressionStatement() {
     consume(TOKEN_SEMICOLON, "Expected ';' after value.");
     emitByte(OP_POP); // we added into the hashmap so we can clear from the stack 
 }
-
 
 static void forStatement() {
   // new scope for the for loop
@@ -629,6 +664,40 @@ static void block() {
     consume(TOKEN_RIGHT_BRACE, "Expected '}' after block");
 }
 
+static void function(FunctionType type) {
+    Compiler compiler;
+    initCompiler(&compiler, type);
+    beginScope(); 
+
+    // (...,...,...
+    consume(TOKEN_LEFT_PAREN, "Expected '(' after function name.");
+    if (!check(TOKEN_RIGHT_PAREN)) {
+        do {
+        current->function->arity++;
+        if (current->function->arity > 255) {
+            errorAtCurrent("Can't have more than 255 parameters.");
+        }
+        uint8_t constant = parseVariable("Expected parameter name.");
+        defineVariable(constant);
+        } while (match(TOKEN_COMMA));
+    }
+    // ...)
+    consume(TOKEN_RIGHT_PAREN, "Expected ')' after parameters.");
+    // { ...
+    consume(TOKEN_LEFT_BRACE, "Expected '{' before function body.");
+    block();
+
+    ObjFunction* function = endCompiler();
+    emitBytes(OP_CONSTANT, makeConstant(OBJ_VAL(function)));
+}
+
+static void funDeclaration() {
+    uint8_t global = parseVariable("Expected function name.");
+    markInitialized();
+    function(TYPE_FUNCTION);
+    defineVariable(global);
+}
+
 static void varDeclaration() {
     uint8_t global = parseVariable("Expected variable name");
 
@@ -646,6 +715,20 @@ static void printStatement() {
     expression();
     consume(TOKEN_SEMICOLON, "Expected ';' after value.");
     emitByte(OP_PRINT);
+}
+
+static void returnStatement() {
+    if (current->type == TYPE_SCRIPT) {
+        error("Can't return from top-level code.");
+    }
+
+    if (match(TOKEN_SEMICOLON)) {
+        emitReturn();
+    } else {
+        expression();
+        consume(TOKEN_SEMICOLON, "Expected ';' after return value.");
+        emitByte(OP_RETURN);
+    }
 }
 
 static void whileStatement() {
@@ -693,7 +776,9 @@ static void synchronize() {
 }
 
 static void declaration() {
-    if (match(TOKEN_VAR)) {
+    if (match(TOKEN_FUN)) {
+        funDeclaration();
+    } else if (match(TOKEN_VAR)) {
         varDeclaration();
     } else {
         statement();
@@ -710,6 +795,8 @@ static void statement() {
         forStatement();
     } else if (match(TOKEN_IF)) {
         ifStatement();
+    } else if (match(TOKEN_RETURN)) {
+        returnStatement();
     } else if (match(TOKEN_WHILE)) {
         whileStatement();
     } else if (match(TOKEN_LEFT_BRACE)) { // parse intitial curly brace

@@ -18,7 +18,7 @@ typedef struct {
 } CallFrame;
 
 typedef struct {
-    // each CallFrame has its own up and pointer tot eh ObjFunction that its executing
+    // each CallFrame has its own up and pointer to the ObjFunction that its executing
     CallFrame frames[FRAMES_MAX]; 
     int frameCount;
 

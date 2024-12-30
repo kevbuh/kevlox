@@ -22,6 +22,7 @@ make all
 - single pass compiler
 - stack-based bytecode VM
 - debugging disassembler
+- functions are first-class citizens
 
 NOTES:
 - binary operators are infix

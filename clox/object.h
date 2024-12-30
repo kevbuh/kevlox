@@ -26,10 +26,17 @@ struct Obj {
 // function are first class so they need to be objects
 typedef struct {
     Obj obj;
-    int arity; // number of params the function expeccts
+    int arity; // number of params the function expects
     Chunk chunk;
     ObjString* name; // function name
 } ObjFunction;
+
+// typedef Value (*NativeFn)(int argCount, Value* args);
+
+// typedef struct {
+//     Obj obj;
+//     NativeFn function;
+// } ObjNative;
 
 // strings are immutable
 struct ObjString {
