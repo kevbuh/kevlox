@@ -23,7 +23,6 @@ static Obj* allocateObject(size_t size, ObjType type) {
 // blank state function pointer
 ObjFunction* newFunction() {
     ObjFunction* function = ALLOCATE_OBJ(ObjFunction, OBJ_FUNCTION);
-
     function->arity = 0;
     function->name = NULL;
     initChunk(&function->chunk);
@@ -65,6 +64,10 @@ ObjString* copyString(const char* chars, int length) {
 }
 
 static void printFunction(ObjFunction* function) {
+    if (function->name == NULL) {
+        printf("<script>");
+        return;
+    }
     printf("<fn %s>", function->name->chars);
 }
 

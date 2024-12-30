@@ -32,6 +32,7 @@ NOTES:
   - A parser produces an AST and then a code generator traverses the AST and outputs target code
 - bytecode > syntax trees
 - only supports double-precision floating point numbers
+- λ
 
 bug:
 - print 0 or 1 returns 0
