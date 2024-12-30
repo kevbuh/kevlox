@@ -2,15 +2,19 @@
 #define clox_object_h
 
 #include "common.h"
+#include "chunk.h"
 #include "value.h"
 
 // extract the object type tag from given value
-#define OBJ_TYPE(value)  (AS_OBJ(value)->type)
-#define IS_STRING(value) isObjType(value, OBJ_STRING)
-#define AS_STRING(value) ((ObjString*)AS_OBJ(value))
-#define AS_CSTRING(value) (((ObjString*)AS_OBJ(value))->chars)
+#define OBJ_TYPE(value)     (AS_OBJ(value)->type)
+#define IS_FUNCTION(value)  isObjType(valye, OBJ_FUNCTION)
+#define IS_STRING(value)    isObjType(value, OBJ_STRING)
+#define AS_FUNCTION(value)  ((ObjFunction*)AS_OBJ(value))
+#define AS_STRING(value)    ((ObjString*)AS_OBJ(value))
+#define AS_CSTRING(value)   (((ObjString*)AS_OBJ(value))->chars)
 
 typedef enum {
+    OBJ_FUNCTION,
     OBJ_STRING,
 } ObjType;
 
@@ -18,6 +22,14 @@ struct Obj {
     ObjType type;
     struct Obj* next;
 };
+
+// function are first class so they need to be objects
+typedef struct {
+    Obj obj;
+    int arity; // number of params the function expeccts
+    Chunk chunk;
+    ObjString* name; // function name
+} ObjFunction;
 
 // strings are immutable
 struct ObjString {
@@ -28,6 +40,7 @@ struct ObjString {
     uint32_t hash; // O(n)
 };
 
+ObjFunction* newFunction();
 ObjString* takeString(char* chars, int length);
 ObjString* copyString(const char* chars, int length);
 void printObject(Value value);
