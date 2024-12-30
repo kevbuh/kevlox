@@ -9,13 +9,30 @@
 
 -------
 
-### How to run: 
+### Compile and run: 
 
-Go into code.txt and type in the code you want to run. Then run:
+Open ```code.txt``` and insert the following code snippet:
+
+```
+fun fib(n) {
+  if (n < 2) return n;
+  return fib(n - 2) + fib(n - 1);
+}
+
+var start = clock();
+print "Fib35 result:";
+print fib(35);
+print "Time (s):";
+print clock() - start;
+```
+
+To compile and run the code, simply execute the following command in your terminal:
 
 ```bash
 make all
 ```
+
+This will process the code, calculate the 35th Fibonacci number, and display both the result and the execution time.
 
 ### Features
 - source code scanner/lexer
