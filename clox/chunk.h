@@ -29,6 +29,7 @@ typedef enum {
     OP_JUMP_IF_FALSE,  // 3 bytes: [opcode, jump offset] - Jumps to a new instruction offset if the top stack value is false.
     OP_LOOP,           // 3 bytes: [opcode, loop offset] - Jumps backward by a specified offset (used for loops).
     OP_CALL,           // 2 bytes: [opcode, argument count] - Calls a function with the specified number of arguments.
+    OP_CLOSURE,
     OP_RETURN,         // 1 byte: Returns from the current function, optionally returning a value.
 } OpCode;
 
