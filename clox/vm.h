@@ -26,6 +26,7 @@ typedef struct {
     Value* stackTop; // points to where the next value to be pushed will go
     Table globals; // global variables
     Table strings; // string table for string interning
+    ObjUpvalue* openUpvalues;
     Obj* objects; // point to head of list for garbage collection
 } VM;
 

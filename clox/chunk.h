@@ -32,6 +32,7 @@ typedef enum {
     OP_LOOP,           // 3 bytes: [opcode, loop offset]      - jumps backward by a specified offset (used for loops)
     OP_CALL,           // 2 bytes: [opcode, argument count]   - calls a function with the specified number of arguments
     OP_CLOSURE,        // Variable bytes: [opcode, function index, upvalue count, upvalue indices] - creates a closure for a function
+    OP_CLOSE_UPVALUE,
     OP_RETURN,         // 1 byte:                             - returns from the current function, optionally returning a value
 } OpCode;
 
