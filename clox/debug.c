@@ -43,7 +43,7 @@ int disassembleInstruction(Chunk* chunk, int offset) {
     printf("%04d", offset); // prints byte offset of the given instruction
 
     if (offset > 0 && chunk->lines[offset] == chunk->lines[offset-1]) {
-        printf("   ^ ");
+        printf("   | ");
     } else {
         printf("%4d ", chunk->lines[offset]);
     }
@@ -87,7 +87,7 @@ int disassembleInstruction(Chunk* chunk, int offset) {
             for (int j = 0; j < function->upvalueCount; j++) {
                 int isLocal = chunk->code[offset++];
                 int index = chunk->code[offset++];
-                printf("%04d      |                     %s %d\n", offset - 2, isLocal ? "local" : "upvalue", index);
+                printf("%04d   |                idx: %d (%s)\n", offset - 2, index, isLocal ? "local" : "upvalue");
             }
 
             return offset;

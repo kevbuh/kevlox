@@ -3,7 +3,7 @@
 <div align="center">
   <img src="https://craftinginterpreters.com/image/a-map-of-the-territory/mountain.png" alt="ci mountain" height="400">
   <br/>
-  clox: documented Lox compiler from <a href="https://craftinginterpreters.com/" target="_blank">Crafting Interpreters</a>
+  Parser+Compiler+VM for the Lox programming language
   <br/>
 </div>
 
@@ -62,3 +62,4 @@ TODO:
 bug:
 - print 0 or 1 returns 0
   - resolve 0 as false and 1 as true
+- #define DEBUG_PRINT_CODE segfault
