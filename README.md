@@ -50,11 +50,15 @@ NOTES:
   - A parser produces an AST and then a code generator traverses the AST and outputs target code
 - bytecode > syntax trees
 - only supports double-precision floating point numbers
+- we want to do as much work as possible during compilation to keep execution simple and fast
+- preorder : "on the way down"
+- postorder : "on the way back up"
 
 TODO:
-- λ
-- let instead of lambda
+- lambda as λ
+- let instead of var
 - call it bub lang...or lang lang?
 
 bug:
 - print 0 or 1 returns 0
+  - resolve 0 as false and 1 as true

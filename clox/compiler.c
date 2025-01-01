@@ -45,6 +45,11 @@ typedef struct {
     int depth;  // depth of the block where the local variable was declared
 } Local;
 
+typedef struct {
+    uint8_t index; // stores which local slot the upvalue is capturing 
+    bool isLocal;  // controls whether the closure captures a local variable or an upvalue from the surrounding function.
+} Upvalue;
+
 // lets the compiler tell when it’s compiling top-level code versus the body of a function
 typedef enum FunctionType {
     TYPE_FUNCTION,
@@ -53,18 +58,18 @@ typedef enum FunctionType {
 
 // simple flat array of all locals that are in scope during each point in the compilation process
 typedef struct Compiler {
-    struct Compiler* enclosing;
-    ObjFunction* function;
-    FunctionType type;
-    
-    Local locals[UINT8_COUNT];
-    int localCount;
-    int scopeDepth;
+    struct Compiler* enclosing;    // compiler for the enclosing scope (e.g., outer function)
+    ObjFunction* function;         // the function being compiled
+    FunctionType type;             // type of the function (e.g., top-level, method, lambda)
+
+    Local locals[UINT8_COUNT];     // local variables in the current scope
+    int localCount;                // number of locals in use
+    Upvalue upvalues[UINT8_COUNT]; // upvalues captured by the function (for closures)
+    int scopeDepth;                // current nesting level of scopes
 } Compiler;
 
 Parser parser;
 Compiler* current = NULL; // global compiler object
-// Chunk* compilingChunk;
 
 static Chunk* currentChunk() {
     return &current->function->chunk;
@@ -256,6 +261,7 @@ static int resolveLocal(Compiler* compiler, Token* name);
 static void and_(bool canAssign);
 static void varDeclaration();
 static uint8_t argumentList();
+static int resolveUpvalue(Compiler* compiler, Token* name);
 
 // =============== ops ===============
 
@@ -338,6 +344,9 @@ static void namedVariable(Token name, bool canAssign) {
     if (arg != -1) {
         getOp = OP_GET_LOCAL;
         setOp = OP_SET_LOCAL;
+    } else if ((arg = resolveUpvalue(current, &name)) != -1) { // look for outer scopes (for closures)
+        getOp = OP_GET_UPVALUE;
+        setOp = OP_SET_UPVALUE;
     } else {
         arg = identifierConstant(&name);
         getOp = OP_GET_GLOBAL;
@@ -464,7 +473,44 @@ static int resolveLocal(Compiler* compiler, Token* name) {
 
     // variable wasn’t found in local scope, should be assumed to be a global variable instead.
     return -1;
-} 
+}
+
+static int addUpvalue(Compiler* compiler, uint8_t index, bool isLocal) {
+    int upvalueCount = compiler->function->upvalueCount;
+
+    for (int i = 0; i < upvalueCount; i++) {
+        Upvalue* upvalue = &compiler->upvalues[i];
+        if (upvalue->index == index && upvalue->isLocal == isLocal) { // upvalue already in Upvalue array
+            return i;
+        }
+    }
+
+    if (upvalueCount == UINT8_COUNT) {
+        error("Too many closure variables in function.");
+        return 0;
+    }
+
+    compiler->upvalues[upvalueCount].isLocal = isLocal;
+    compiler->upvalues[upvalueCount].index = index;
+    return compiler->function->upvalueCount++;
+}
+
+// looks for a local variable declared in any of the surrounding functions
+static int resolveUpvalue(Compiler* compiler, Token* name) {
+    if (compiler->enclosing == NULL) return -1;
+
+    int local = resolveLocal(compiler->enclosing, name);
+    if (local != -1) {
+        return addUpvalue(compiler, (uint8_t)local, true);
+    }
+
+    int upvalue = resolveUpvalue(compiler->enclosing, name);
+    if (upvalue != -1) {
+        return addUpvalue(compiler, (uint8_t)upvalue, false);
+    }
+
+    return -1;
+}
 
 // initializes next available local in the compiler's array of variables
 // stores the var name and depth of the scope that owns the variable
@@ -690,6 +736,11 @@ static void function(FunctionType type) {
     ObjFunction* function = endCompiler();
     // emitBytes(OP_CONSTANT, makeConstant(OBJ_VAL(function)));
     emitBytes(OP_CLOSURE, makeConstant(OBJ_VAL(function)));
+
+    for (int i = 0; i < function->upvalueCount; i++) {
+        emitByte(compiler.upvalues[i].isLocal ? 1 : 0);
+        emitByte(compiler.upvalues[i].index);
+    }
 }
 
 static void funDeclaration() {
