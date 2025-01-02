@@ -1,7 +1,9 @@
 all: build run
 
 build:
-	gcc clox/main.c clox/chunk.c clox/memory.c clox/debug.c clox/value.c clox/vm.c clox/compiler.c clox/scanner.c clox/object.c clox/table.c
+	gcc kevlox/main.c kevlox/chunk.c kevlox/memory.c kevlox/debug.c kevlox/value.c kevlox/vm.c kevlox/compiler.c kevlox/scanner.c kevlox/object.c kevlox/table.c
 
 run:
-	echo "" && ./a.out code.lox
+	echo ""
+	./a.out code.kev
+	rm a.out

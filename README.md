@@ -1,9 +1,9 @@
-# clox
+# kevlox
 
 <div align="center">
   <img src="https://craftinginterpreters.com/image/a-map-of-the-territory/mountain.png" alt="ci mountain" height="400">
   <br/>
-  Parser+Compiler+VM for the Lox programming language
+  Kevlox. Parser+Compiler+VM for the Lox programming language. Customized by me, Kevin. 
   <br/>
 </div>
 
