@@ -63,3 +63,4 @@ bug:
 - print 0 or 1 returns 0
   - resolve 0 as false and 1 as true
 - #define DEBUG_PRINT_CODE segfault
+- #define DEBUG_STRESS_GC segfault

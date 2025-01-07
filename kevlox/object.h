@@ -58,6 +58,7 @@ struct ObjString {
     uint32_t hash; // O(n)
 };
 
+// values from enclosing environment
 typedef struct ObjUpvalue {
     Obj obj;
     Value* location;

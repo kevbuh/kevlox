@@ -25,9 +25,18 @@ typedef struct {
     Value stack[STACK_MAX]; // bytecode stack
     Value* stackTop; // points to where the next value to be pushed will go
     Table globals; // global variables
-    Table strings; // string table for string interning
+    Table strings; // string pool for string interning
     ObjUpvalue* openUpvalues;
     Obj* objects; // point to head of list for garbage collection
+
+    // garbage collector
+    int grayCount;
+    int grayCapacity;
+    Obj** grayStack;
+
+    // self adjusting heap
+    size_t bytesAllocated;
+    size_t nextGC;
 } VM;
 
 typedef enum {

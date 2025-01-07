@@ -1,6 +1,8 @@
-# include <stdlib.h>
-# include "chunk.h"
-# include "memory.h"
+#include <stdlib.h>
+
+#include "vm.h"
+#include "chunk.h"
+#include "memory.h"
 
 void initChunk(Chunk* chunk) {
     chunk->count = 0;
@@ -32,6 +34,8 @@ void writeChunk(Chunk* chunk, uint8_t byte, int line) {
 
 // adds the given value to the end of the chunk’s constant table and returns its index
 int addConstant(Chunk* chunk, Value value) {
+    push(value);
     writeValueArray(&chunk->constants, value);
+    pop();
     return chunk->constants.count - 1; // return the index where the constant was appended so that we can locate the constant later
 }
